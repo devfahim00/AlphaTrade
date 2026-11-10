@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "QX Brain Bridge (demo)",
+  "version": "0.1",
+  "host_permissions": ["https://market-qx.info/*", "http://127.0.0.1:8765/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://market-qx.info/*"], "js": ["inject.js"], "run_at": "document_start", "world": "MAIN" },
+    { "matches": ["https://market-qx.info/*"], "js": ["content.js"], "run_at": "document_start" }
+  ]
+}

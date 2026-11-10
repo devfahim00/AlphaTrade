@@ -1,0 +1,36 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build brain exe
+        working-directory: brain
+        shell: pwsh
+        run: |
+          pip install -r requirements.txt pyinstaller
+          pyinstaller --onefile --name AlphaTradeBrain --collect-submodules uvicorn --hidden-import pandas._libs.tslibs.timedeltas main.py
+
+      - name: Zip extension
+        shell: pwsh
+        run: Compress-Archive -Path extension\* -DestinationPath AlphaTrade-extension.zip
+
+      - name: Publish pre-release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" brain/dist/AlphaTradeBrain.exe AlphaTrade-extension.zip `
+            --prerelease --title "AlphaTrade ${{ github.ref_name }} (pre-release)" `
+            --notes "Brain exe + Chrome extension zip. Demo use only. See README."
