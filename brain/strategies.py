@@ -1,6 +1,8 @@
 """Indicators + 3 strategies.
 Each strategy: df (open/high/low/close, DatetimeIndex) -> Series {+1 CALL, -1 PUT, 0 none}.
 Signal at bar i uses only data up to bar i (no look-ahead)."""
+import copy
+
 import numpy as np
 import pandas as pd
 
@@ -78,3 +80,13 @@ STRATEGIES = {
     "trend_pullback": trend_pullback,
     "rsi_stoch_reversal": rsi_stoch_reversal,
 }
+
+
+# Tunable at runtime (the GUI edits these). Keys match the function arguments.
+DEFAULTS = {
+    "sr_price_action": {"lookback": 40, "tol": 0.25},
+    "trend_pullback": {"htf_mult": 5, "fast": 20, "slow": 50},
+    "rsi_stoch_reversal": {"lo": 35, "hi": 65, "trend_cap": 1.5},
+}
+PARAMS = copy.deepcopy(DEFAULTS)
+ENABLED = {name: True for name in DEFAULTS}

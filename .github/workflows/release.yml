@@ -20,7 +20,7 @@ jobs:
         shell: pwsh
         run: |
           pip install -r requirements.txt pyinstaller
-          pyinstaller --onefile --name AlphaTradeBrain --collect-submodules uvicorn --hidden-import pandas._libs.tslibs.timedeltas main.py
+          pyinstaller --onefile --windowed --name AlphaTradeBrain --collect-submodules uvicorn --hidden-import pandas._libs.tslibs.timedeltas main.py
 
       - name: Zip extension
         shell: pwsh

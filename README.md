@@ -9,7 +9,8 @@ Signal "brain" (Python) + browser extension for **demo** trading tests.
   brain on `127.0.0.1:8765`, shows the signal overlay.
 
 ## Use (from the pre-release)
-1. Run `AlphaTradeBrain.exe`.
+1. Run `AlphaTradeBrain.exe` (GUI: settings, strategy parameters, live signal, log; settings are saved
+   to `settings.json` next to the exe, results to `journal.csv`).
 2. Unzip `AlphaTrade-extension.zip` → `chrome://extensions` → Developer mode → *Load unpacked*.
 3. Open the demo page. After warm-up (~150 candles) the overlay shows the signal.
 
@@ -17,7 +18,9 @@ Signal "brain" (Python) + browser extension for **demo** trading tests.
 ```
 cd brain && pip install -r requirements.txt && python main.py
 ```
-Config (env): `QX_TF`, `QX_EXPIRY_BARS`, `QX_PAYOUT`, `QX_WINDOW`, `QX_MIN_CANDLES`.
+Headless (no GUI): `python main.py --nogui`. Env defaults: `QX_TF`, `QX_EXPIRY_BARS`, `QX_PAYOUT`, `QX_WINDOW`, `QX_MIN_CANDLES`.
+
+If you change the server port in the app, set the same port in the extension's Options page.
 
 ## Notes
 - The tick parser in `extension/inject.js` (`walk()`) is a guess at the frame layout; check the

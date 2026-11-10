@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "QX Brain Bridge (demo)",
-  "version": "0.1",
-  "host_permissions": ["https://market-qx.info/*", "http://127.0.0.1:8765/*"],
+  "name": "AlphaTrade Bridge (demo)",
+  "version": "0.2.0",
+  "permissions": ["storage"],
+  "host_permissions": ["https://market-qx.info/*", "http://127.0.0.1/*"],
+  "options_page": "options.html",
   "background": { "service_worker": "background.js" },
   "content_scripts": [
     { "matches": ["https://market-qx.info/*"], "js": ["inject.js"], "run_at": "document_start", "world": "MAIN" },

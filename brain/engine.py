@@ -6,7 +6,7 @@ from math import sqrt
 import numpy as np
 import pandas as pd
 
-from strategies import STRATEGIES
+from strategies import ENABLED, PARAMS, STRATEGIES
 
 
 @dataclass
@@ -63,7 +63,9 @@ def analyze(df, cfg: Config):
 
     rows = []
     for name, fn in STRATEGIES.items():
-        sig = fn(df).fillna(0).astype(int)
+        if not ENABLED.get(name, True):
+            continue
+        sig = fn(df, **PARAMS.get(name, {})).fillna(0).astype(int)
         idx, res = outcomes(close, sig, k)
         tr, te = _stats(idx, res, start, split), _stats(idx, res, split, end)
         rows.append({"name": name, "train": tr, "test": te, "now": int(sig.iloc[-1]),

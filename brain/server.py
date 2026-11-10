@@ -1,8 +1,9 @@
-"""Python brain. Run:  uvicorn server:app --host 127.0.0.1 --port 8765"""
+"""Python brain (FastAPI). Headless:  python main.py --nogui   |   GUI: python main.py"""
 import csv
 import os
+import threading
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -11,16 +12,26 @@ from engine import Config, analyze, build_df
 
 CFG = Config()
 JOURNAL = os.getenv("QX_JOURNAL", "journal.csv")
+LOCK = threading.Lock()
+EVENTS = deque(maxlen=500)      # human-readable log lines, drained by the GUI
+last_asset = None
 app = FastAPI()
 
 
+def ev(msg):
+    EVENTS.append(f"{time.strftime('%H:%M:%S')}  {msg}")
+
+
 def journal(row):
-    new = not os.path.exists(JOURNAL)
-    with open(JOURNAL, "a", newline="") as f:
-        w = csv.writer(f)
-        if new:
-            w.writerow(["time", "asset", "strategy", "dir", "entry", "exit", "win", "train_wr", "test_wr"])
-        w.writerow(row)
+    try:
+        new = not os.path.exists(JOURNAL)
+        with open(JOURNAL, "a", newline="") as f:
+            w = csv.writer(f)
+            if new:
+                w.writerow(["time", "asset", "strategy", "dir", "entry", "exit", "win", "train_wr", "test_wr"])
+            w.writerow(row)
+    except OSError as e:
+        ev(f"journal write failed: {e}")
 
 
 class Book:
@@ -53,6 +64,8 @@ class Book:
                 self.live[x["strategy"]]["w" if win else "l"] += 1
                 journal([time.strftime("%F %T"), self.asset, x["strategy"], x["dir"],
                          x["entry"], p, int(win), x["train_wr"], x["test_wr"]])
+                ev(f"{'WIN ' if win else 'LOSS'}  {self.asset}  {x['strategy']}  "
+                   f"{'CALL' if x['dir'] > 0 else 'PUT'}  {x['entry']:.5f} -> {p:.5f}")
                 self.pending.remove(x)
 
     def _on_close(self, t, p, b):
@@ -64,6 +77,7 @@ class Book:
                 "entry": p, "exp": b + CFG.expiry_bars * CFG.tf,
                 "train_wr": r["best"]["train"]["wr"], "test_wr": r["best"]["test"]["wr"],
             })
+            ev(f"SIGNAL {r['signal']}  {self.asset}  via {r['strategy']}  expiry {CFG.expiry_bars * CFG.tf}s")
 
 
 books = {}
@@ -93,12 +107,19 @@ class Ticks(BaseModel):
 
 @app.post("/ticks")
 def ticks(body: Ticks):
+    global last_asset
     last = None
-    for x in sorted(body.ticks, key=lambda x: x.t):
-        t = x.t / 1000 if x.t > 1e11 else x.t         # ms -> s
-        books.setdefault(x.a, Book(x.a)).tick(t, x.p)
-        last = x.a
-    return state(last) if last else {}
+    with LOCK:
+        for x in sorted(body.ticks, key=lambda x: x.t):
+            t = x.t / 1000 if x.t > 1e11 else x.t     # ms -> s
+            if x.a not in books:
+                books[x.a] = Book(x.a)
+                ev(f"first tick for {x.a}")
+            books[x.a].tick(t, x.p)
+            last = x.a
+        if last:
+            last_asset = last
+        return state(last) if last else {}
 
 
 @app.get("/state/{asset}")
